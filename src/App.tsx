@@ -45,18 +45,36 @@ export default function App() {
   // Step 3: Cake, Candle Blowing, Letter & Wish Jar Page
   const [step, setStep] = useState<number>(0);
 
-  // Customization State (Stored in LocalStorage for persistence)
+  // Check if we are in view-only mode from URL
+  const [isViewOnly, setIsViewOnly] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('view') === '1';
+  });
+
+  // Customization State (Stored in LocalStorage for persistence, fallback to URL parameters if loaded via shareable link)
   const [birthdayName, setBirthdayName] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const nameParam = params.get('name');
+    if (nameParam) return nameParam;
     return localStorage.getItem('bday_name') || 'Adinda Kirana';
   });
   const [senderName, setSenderName] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const senderParam = params.get('sender');
+    if (senderParam) return senderParam;
     return localStorage.getItem('bday_sender') || 'Seseorang yang Menyayangimu';
   });
   const [customLetter, setCustomLetter] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const letterParam = params.get('letter');
+    if (letterParam) return letterParam;
     return localStorage.getItem('bday_letter') || 
       'Di hari yang sangat istimewa ini, aku hanya ingin mengucapkan betapa bersyukurnya dunia ini memilikimu. Semoga setiap langkahmu selalu diiringi kebahagiaan, senyumanmu tak pernah pudar, dan seluruh impian indahmu segera menjadi kenyataan. Selamat merayakan hari kelahiranmu! 🌸✨';
   });
   const [selectedTheme, setSelectedTheme] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const themeParam = params.get('theme');
+    if (themeParam) return themeParam;
     return localStorage.getItem('bday_theme') || 'sakura'; // 'sakura', 'warm', 'sunset', 'cozy', 'midnight'
   });
   const [photos, setPhotos] = useState<CustomPhoto[]>(() => {
@@ -77,6 +95,7 @@ export default function App() {
 
   // Settings Panel Toggle
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [copySuccess, setCopySuccess] = useState<boolean>(false);
 
   // Interactive Birthday Cake State
   const [candleLit, setCandleLit] = useState<boolean>(true);
@@ -103,18 +122,43 @@ export default function App() {
   const isPlayingRef = useRef<boolean>(false);
   const synthIntervalRef = useRef<any>(null);
 
+  // Copy shareable link helper
+  const handleCopyShareLink = () => {
+    const baseUrl = window.location.origin + window.location.pathname;
+    const params = new URLSearchParams();
+    params.set('view', '1');
+    params.set('name', birthdayName);
+    params.set('sender', senderName);
+    params.set('letter', customLetter);
+    params.set('theme', selectedTheme);
+    
+    const shareUrl = `${baseUrl}?${params.toString()}`;
+    
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => {
+        setCopySuccess(true);
+        playSparkleSound();
+        setTimeout(() => setCopySuccess(false), 3000);
+      })
+      .catch((err) => {
+        console.error('Failed to copy text: ', err);
+      });
+  };
+
   // Save changes to localStorage helper
   useEffect(() => {
+    if (isViewOnly) return; // Do not overwrite if in view-only mode
     localStorage.setItem('bday_name', birthdayName);
     localStorage.setItem('bday_sender', senderName);
     localStorage.setItem('bday_letter', customLetter);
     localStorage.setItem('bday_theme', selectedTheme);
     localStorage.setItem('bday_photos', JSON.stringify(photos));
-  }, [birthdayName, senderName, customLetter, selectedTheme, photos]);
+  }, [birthdayName, senderName, customLetter, selectedTheme, photos, isViewOnly]);
 
   useEffect(() => {
+    if (isViewOnly) return; // Do not overwrite if in view-only mode
     localStorage.setItem('bday_wishes', JSON.stringify(wishes));
-  }, [wishes]);
+  }, [wishes, isViewOnly]);
 
   // Audio Context Laziness
   const getAudioContext = () => {
@@ -570,20 +614,22 @@ export default function App() {
           </span>
         </button>
 
-        <div className="flex items-center gap-3">
-          <button
-            id="settings_toggle_btn"
-            onClick={() => {
-              setShowSettings(!showSettings);
-              playSparkleSound();
-            }}
-            className="flex items-center gap-1 px-4 py-2 rounded-full bg-white/70 hover:bg-white text-stone-700 shadow-sm border border-stone-200/40 text-xs font-semibold transition-all hover:scale-105"
-            title="Konfigurasi Ucapan & Foto Anda"
-          >
-            <Settings className="w-4 h-4 text-rose-400" />
-            <span>Atur Ucapan / Foto</span>
-          </button>
-        </div>
+        {!isViewOnly && (
+          <div className="flex items-center gap-3">
+            <button
+              id="settings_toggle_btn"
+              onClick={() => {
+                setShowSettings(!showSettings);
+                playSparkleSound();
+              }}
+              className="flex items-center gap-1 px-4 py-2 rounded-full bg-white/70 hover:bg-white text-stone-700 shadow-sm border border-stone-200/40 text-xs font-semibold transition-all hover:scale-105"
+              title="Konfigurasi Ucapan & Foto Anda"
+            >
+              <Settings className="w-4 h-4 text-rose-400" />
+              <span>Atur Ucapan / Foto</span>
+            </button>
+          </div>
+        )}
       </header>
 
       {/* SETUP / CONFIGURATION DRAWER PANEL (Only shown when configured by user) */}
@@ -679,50 +725,23 @@ export default function App() {
                 />
               </div>
 
-              {/* Unggah Foto Estetik */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-semibold text-stone-700">5. Foto Galeri Kenangan ({photos.length})</label>
-                  <label className="flex items-center gap-1 text-xs text-rose-500 hover:text-rose-600 font-semibold cursor-pointer bg-rose-50 px-3 py-1.5 rounded-full border border-rose-100">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Unggah Foto</span>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      multiple 
-                      onChange={handlePhotoUpload} 
-                      className="hidden" 
-                    />
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-[160px] overflow-y-auto p-1 bg-stone-50 rounded-2xl border border-stone-100">
-                  {photos.map((p, idx) => (
-                    <div key={p.id} className="relative group rounded-xl overflow-hidden aspect-square border border-stone-200 bg-white shadow-sm">
-                      <img src={p.url} alt="thumbnail" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-1.5">
-                        <input 
-                          type="text" 
-                          value={p.caption} 
-                          onChange={(e) => handleUpdateCaption(p.id, e.target.value)}
-                          className="w-full bg-white/90 text-[10px] px-1 py-0.5 rounded text-stone-800 font-medium mb-1 focus:outline-none"
-                          title="Ubah Caption Foto"
-                        />
-                        <button 
-                          onClick={() => handleDeletePhoto(p.id)}
-                          className="bg-red-500 hover:bg-red-600 text-white p-1 rounded self-center shadow"
-                          title="Hapus Foto"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  {photos.length === 0 && (
-                    <div className="col-span-full py-8 text-center text-xs text-stone-400">
-                      Belum ada foto. Unggah beberapa foto berharga Anda!
-                    </div>
-                  )}
+              {/* Bagikan Link Section */}
+              <div className="bg-rose-50/75 p-5 rounded-2xl border border-rose-100 flex flex-col gap-2">
+                <h3 className="text-sm font-bold text-rose-800 flex items-center gap-1.5">
+                  <span>🔗 Dapatkan Link Bagikan Kejutan</span>
+                </h3>
+                <p className="text-[11px] text-rose-700/90 leading-relaxed">
+                  Gunakan tombol di bawah ini untuk menyalin link ucapan yang sudah Anda sesuaikan. Ketika penerima membuka link ini, tombol pengaturan "Atur Ucapan / Foto" akan disembunyikan otomatis agar mereka tidak bisa mengedit apa pun, melainkan hanya menikmati kejutannya!
+                </p>
+                <div className="flex gap-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={handleCopyShareLink}
+                    className="w-full sm:w-auto px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-xl shadow-md shadow-rose-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    {copySuccess ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                    <span>{copySuccess ? 'Link Berhasil Disalin!' : 'Salin Link Kejutan ✨'}</span>
+                  </button>
                 </div>
               </div>
 
@@ -793,7 +812,7 @@ export default function App() {
 
             <p className="text-xs tracking-widest uppercase font-bold opacity-60 mb-2">Hari Ini Adalah Milikmu,</p>
             
-            <h1 id="birthday_person_name_display" className="text-3xl sm:text-5xl font-serif-aesthetic font-black mb-6 leading-tight select-all">
+            <h1 id="birthday_person_name_display" className="text-5xl sm:text-7xl font-handwriting italic font-bold mb-6 leading-tight select-all text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-amber-500">
               {birthdayName || 'Adinda Kirana'}
             </h1>
 
@@ -837,10 +856,13 @@ export default function App() {
               
               <button 
                 id="step1_next_btn"
-                onClick={handleNextStep}
+                onClick={() => {
+                  playSparkleSound();
+                  setStep(2);
+                }}
                 className={`flex items-center gap-1.5 px-6 py-2.5 rounded-full text-xs font-bold shadow-md transition-all hover:scale-105 ${getAccentBtnClass()}`}
               >
-                <span>Lihat Foto Kenangan</span>
+                <span>Lihat Kue Ulang Tahun 🎂</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -848,106 +870,8 @@ export default function App() {
           </div>
         )}
 
-        {/* STEP 2: PHOTO GALLERY SCRAPBOOK */}
+        {/* STEP 2: CAKE & BLOW CANDLES */}
         {step === 2 && (
-          <div id="step_2_container" className="w-full animate-fadeIn flex flex-col gap-6">
-            
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-stone-200/10 pb-4">
-              <div className="text-center sm:text-left">
-                <span className="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-widest mb-1">Galeri Estetik</span>
-                <h2 className="text-2xl font-serif-aesthetic font-bold">Galeri Foto Kenangan</h2>
-              </div>
-              
-              <label className="flex items-center gap-1.5 text-xs font-bold text-white bg-rose-500 hover:bg-rose-600 px-5 py-2.5 rounded-full shadow-md shadow-rose-500/20 cursor-pointer transition-all hover:scale-105">
-                <Upload className="w-4 h-4" />
-                <span>Unggah Foto</span>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  multiple 
-                  onChange={handlePhotoUpload} 
-                  className="hidden" 
-                />
-              </label>
-            </div>
-
-            {/* Aesthetic Scrapbook Collage of Polaroids */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 py-4">
-              {photos.map((p, idx) => {
-                // Generate unique rotating angle based on index for natural polaroid aesthetic look
-                const angles = ['-rotate-3', 'rotate-2', '-rotate-1', 'rotate-3'];
-                const currentAngle = angles[idx % angles.length];
-
-                return (
-                  <div 
-                    key={p.id}
-                    className={`bg-white p-3 rounded-2xl shadow-lg border border-stone-100 transition-all duration-300 hover:scale-105 hover:rotate-0 hover:z-20 relative group ${currentAngle}`}
-                  >
-                    <div className="aspect-square w-full overflow-hidden bg-stone-50 rounded-xl relative">
-                      <img 
-                        src={p.url} 
-                        alt="Foto Kenangan" 
-                        className="w-full h-full object-cover grayscale-[10%] hover:grayscale-0 transition-all duration-500" 
-                      />
-                      {/* Hover delete overlay */}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button
-                          onClick={() => {
-                            handleDeletePhoto(p.id);
-                            playSparkleSound();
-                          }}
-                          className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow transition-all transform hover:scale-110"
-                          title="Hapus Foto"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* In-Grid Upload Card */}
-              <label className="bg-white/40 hover:bg-white/70 border-2 border-dashed border-stone-300/50 rounded-2xl p-4 aspect-square flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-105 shadow-sm group">
-                <Camera className="w-8 h-8 text-stone-400 group-hover:text-rose-500 group-hover:scale-110 transition-all mb-2" />
-                <span className="text-xs font-bold text-stone-600 group-hover:text-stone-800">Tambah Foto</span>
-                <span className="text-[9px] text-stone-400 mt-0.5">Unggah dari hp/laptop</span>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  multiple 
-                  onChange={handlePhotoUpload} 
-                  className="hidden" 
-                />
-              </label>
-            </div>
-
-            {/* Step controls */}
-            <div className="flex justify-between items-center mt-6">
-              <button 
-                id="step2_back_btn"
-                onClick={handlePrevStep}
-                className={`flex items-center gap-1 px-4 py-2.5 rounded-full text-xs font-semibold ${getSecBtnClass()}`}
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Kembali</span>
-              </button>
-              
-              <button 
-                id="step2_next_btn"
-                onClick={handleNextStep}
-                className={`flex items-center gap-1.5 px-6 py-2.5 rounded-full text-xs font-bold shadow-md transition-all hover:scale-105 ${getAccentBtnClass()}`}
-              >
-                <span>Halaman Kejutan Utama 🎁</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-          </div>
-        )}
-
-        {/* STEP 3: CAKE & BLOW CANDLES */}
-        {step === 3 && (
           <div id="step_3_container" className="w-full max-w-xl mx-auto animate-fadeIn flex flex-col gap-6 pb-8">
             
             <div className={`p-6 sm:p-8 rounded-3xl ${getCardGlassClass()} flex flex-col items-center justify-center text-center relative overflow-hidden shadow-xl`}>
