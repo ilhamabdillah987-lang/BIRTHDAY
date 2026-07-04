@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, FormEvent, ChangeEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent, ChangeEvent, CSSProperties } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 // @ts-ignore
 import birthdayGirlImg from './assets/images/birthday_girl_1783140897098.jpg';
@@ -35,6 +36,61 @@ interface CustomPhoto {
   id: string;
   url: string;
   caption: string;
+}
+
+function FloatingBalloons() {
+  const [balloons] = useState(() => {
+    const colors = [
+      'from-rose-300 to-pink-400',
+      'from-sky-300 to-blue-400',
+      'from-purple-300 to-indigo-400',
+      'from-amber-200 to-yellow-400',
+      'from-emerald-200 to-teal-400',
+      'from-fuchsia-300 to-pink-500',
+      'from-violet-300 to-purple-500'
+    ];
+    return Array.from({ length: 14 }).map((_, i) => ({
+      id: i,
+      x: 3 + (i * 94) / 13 + Math.random() * 4,
+      color: colors[i % colors.length],
+      delay: Math.random() * 12,
+      speed: 14 + Math.random() * 14,
+      size: 40 + Math.random() * 20,
+      rotation: -15 + Math.random() * 30,
+    }));
+  });
+
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+      {balloons.map((b) => (
+        <div
+          key={b.id}
+          className="absolute bottom-0 animate-balloon-rise"
+          style={{
+            left: `${Math.min(95, Math.max(2, b.x))}%`,
+            animationDelay: `${b.delay}s`,
+            animationDuration: `${b.speed}s`,
+          } as CSSProperties}
+        >
+          <div className="flex flex-col items-center">
+            <div 
+              className={`bg-gradient-to-t ${b.color} relative shadow-md shadow-black/5`}
+              style={{
+                width: `${b.size}px`,
+                height: `${b.size * 1.3}px`,
+                transform: `rotate(${b.rotation}deg)`,
+                borderRadius: '50% 50% 50% 50% / 40% 40% 60% 60%'
+              }}
+            >
+              <div className="absolute top-2 left-3 w-2.5 h-4.5 bg-white/25 rounded-full rotate-[25deg]"></div>
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-inherit rounded-sm rotate-45"></div>
+            </div>
+            <div className="w-[1px] h-20 bg-stone-400/25"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function App() {
@@ -578,6 +634,9 @@ export default function App() {
   return (
     <div id="aesthetic_birthday_container" className={`min-h-screen relative flex flex-col justify-between transition-all duration-1000 ${getThemeBgClass()}`}>
       
+      {/* Floating Balloons Background Layer */}
+      <FloatingBalloons />
+      
       {/* Gentle Floating Particle Stars in Background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
         {[...Array(15)].map((_, i) => (
@@ -725,6 +784,58 @@ export default function App() {
                 />
               </div>
 
+              {/* Unggah Foto Estetik */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-semibold text-stone-700">5. Foto Galeri Kenangan ({photos.length})</label>
+                  <label className="flex items-center gap-1.5 text-xs text-rose-500 hover:text-rose-600 font-bold cursor-pointer bg-rose-50 px-3 py-1.5 rounded-full border border-rose-100 transition-all active:scale-95">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Unggah Foto</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      multiple 
+                      onChange={handlePhotoUpload} 
+                      className="hidden" 
+                    />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-[160px] overflow-y-auto p-2 bg-stone-50 rounded-2xl border border-stone-200/50">
+                  {photos.map((p, idx) => (
+                    <div key={p.id} className="relative group rounded-xl overflow-hidden aspect-square border border-stone-200 bg-white shadow-sm">
+                      <img src={p.url} alt="thumbnail" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-1.5">
+                        <input 
+                          type="text" 
+                          value={p.caption} 
+                          onChange={(e) => handleUpdateCaption(p.id, e.target.value)}
+                          className="w-full bg-white/95 text-[9px] px-1 py-0.5 rounded text-stone-800 font-bold mb-1 focus:outline-none"
+                          title="Ubah Caption Foto"
+                          placeholder="Beri caption..."
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            handleDeletePhoto(p.id);
+                            playSparkleSound();
+                          }}
+                          className="bg-red-500 hover:bg-red-600 text-white p-1 rounded self-center shadow active:scale-90 transition-all"
+                          title="Hapus Foto"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {photos.length === 0 && (
+                    <div className="col-span-full py-8 text-center text-xs text-stone-400">
+                      Belum ada foto. Unggah beberapa foto berharga Anda!
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Bagikan Link Section */}
               <div className="bg-rose-50/75 p-5 rounded-2xl border border-rose-100 flex flex-col gap-2">
                 <h3 className="text-sm font-bold text-rose-800 flex items-center gap-1.5">
@@ -765,238 +876,374 @@ export default function App() {
       )}
 
       {/* CORE DISPLAY STAGES (wizard steps) */}
-      <main id="main_content_stage" className="flex-grow flex items-center justify-center p-4 max-w-4xl mx-auto w-full z-10">
+      <main id="main_content_stage" className="flex-grow flex items-center justify-center p-4 max-w-4xl mx-auto w-full z-10 overflow-hidden">
         
-        {/* STEP 0: INITIAL VIEW (ONLY "SELAMAT ULANG TAHUN" + NEXT BUTTON) */}
-        {step === 0 && (
-          <div id="step_0_container" className="text-center animate-fadeIn flex flex-col items-center justify-center gap-10 max-w-lg">
-            <div className="relative">
-              {/* Soft decorative elements floating */}
-              <div className="absolute -top-12 -left-12 text-5xl animate-bounce duration-1000">🎉</div>
-              <div className="absolute -bottom-8 -right-8 text-5xl animate-bounce delay-300">✨</div>
-              
-              <h1 id="title_selamat_ulang_tahun" className="text-5xl sm:text-7xl font-serif-aesthetic font-extrabold tracking-wide drop-shadow-sm leading-tight text-center">
-                Selamat <br/>
-                <span className={`inline-block py-2 ${
-                  selectedTheme === 'midnight' 
-                    ? 'text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-indigo-200 to-amber-200' 
-                    : 'text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-amber-500 to-rose-600'
-                }`}>
-                  Ulang Tahun
-                </span>
-              </h1>
-            </div>
-
-            <button 
-              id="start_journey_btn"
-              onClick={handleNextStep}
-              className={`group flex items-center gap-3 px-8 py-4 rounded-full text-base font-bold transition-all duration-300 hover:scale-105 shadow-lg ${getAccentBtnClass()}`}
+        <AnimatePresence mode="wait">
+          {/* STEP 0: INITIAL VIEW (ONLY "SELAMAT ULANG TAHUN" + NEXT BUTTON) */}
+          {step === 0 && (
+            <motion.div 
+              key="step0"
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -30, scale: 0.95 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              id="step_0_container" 
+              className="text-center flex flex-col items-center justify-center gap-10 max-w-lg"
             >
-              <span>Next</span>
-              <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-            </button>
-          </div>
-        )}
-
-        {/* STEP 1: BIRTHDAY PERSON'S NAME */}
-        {step === 1 && (
-          <div id="step_1_container" className={`w-full max-w-xl p-8 rounded-3xl ${getCardGlassClass()} text-center animate-fadeIn relative overflow-hidden`}>
-            
-            {/* Absolute decorative circle blobs */}
-            <div className="absolute -top-16 -left-16 w-32 h-32 bg-rose-200/20 rounded-full blur-2xl"></div>
-            <div className="absolute -bottom-16 -right-16 w-32 h-32 bg-amber-200/20 rounded-full blur-2xl"></div>
-
-            <div className="flex justify-center mb-6">
-              <span className="text-4xl animate-pulse">🎂</span>
-            </div>
-
-            <p className="text-xs tracking-widest uppercase font-bold opacity-60 mb-2">Hari Ini Adalah Milikmu,</p>
-            
-            <h1 id="birthday_person_name_display" className="text-5xl sm:text-7xl font-handwriting italic font-bold mb-6 leading-tight select-all text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-amber-500">
-              {birthdayName || 'Adinda Kirana'}
-            </h1>
-
-            <div className="w-16 h-1 bg-gradient-to-r from-rose-400 to-amber-300 mx-auto mb-6 rounded-full"></div>
-
-            <p className="text-sm italic opacity-80 leading-relaxed max-w-md mx-auto mb-8 font-serif-aesthetic">
-              &ldquo;Semoga seiring bertambahnya angka, senyumanmu semakin merekah, hatimu semakin diteduhkan, dan duniamu selalu diisi oleh kedamaian serta cinta tulus.&rdquo;
-            </p>
-
-            {/* Custom Interactive Heart Click */}
-            <div className="mb-8">
-              <button 
-                id="floating_heart_tap_btn"
-                onClick={() => {
-                  playSparkleSound();
-                  confetti({
-                    particleCount: 20,
-                    angle: 90,
-                    spread: 45,
-                    origin: { y: 0.6 }
-                  });
-                }}
-                className="mx-auto w-16 h-16 rounded-full bg-rose-50 hover:bg-rose-100 flex items-center justify-center border border-rose-200 shadow-md group active:scale-95 transition-all"
-                title="Kirimkan Cinta Kasih Anda"
-              >
-                <Heart className="w-8 h-8 text-rose-500 fill-rose-500/20 group-hover:scale-110 group-hover:fill-rose-500 transition-all animate-float" />
-              </button>
-              <span className="text-[10px] block mt-2 opacity-50 font-semibold uppercase tracking-wider">Tekan untuk kirim cinta</span>
-            </div>
-
-            {/* Step Controls */}
-            <div className="flex justify-between items-center pt-4 border-t border-stone-200/10">
-              <button 
-                id="step1_back_btn"
-                onClick={handlePrevStep}
-                className={`flex items-center gap-1 px-4 py-2.5 rounded-full text-xs font-semibold ${getSecBtnClass()}`}
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Kembali</span>
-              </button>
-              
-              <button 
-                id="step1_next_btn"
-                onClick={() => {
-                  playSparkleSound();
-                  setStep(2);
-                }}
-                className={`flex items-center gap-1.5 px-6 py-2.5 rounded-full text-xs font-bold shadow-md transition-all hover:scale-105 ${getAccentBtnClass()}`}
-              >
-                <span>Lihat Kue Ulang Tahun 🎂</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-          </div>
-        )}
-
-        {/* STEP 2: CAKE & BLOW CANDLES */}
-        {step === 2 && (
-          <div id="step_3_container" className="w-full max-w-xl mx-auto animate-fadeIn flex flex-col gap-6 pb-8">
-            
-            <div className={`p-6 sm:p-8 rounded-3xl ${getCardGlassClass()} flex flex-col items-center justify-center text-center relative overflow-hidden shadow-xl`}>
-              
-              <span className="inline-block px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold uppercase tracking-widest mb-4">Interaktif</span>
-              
-              <h2 className="text-3xl font-serif-aesthetic font-bold mb-1">Kue Ulang Tahun</h2>
-              <p className="text-xs text-stone-500 dark:text-stone-300 mb-6">Tiup lilinnya untuk meledakkan kejutan indah!</p>
-
-              {/* 3D-ish CSS Birthday Cake */}
-              <div className="relative w-48 h-48 my-6 flex flex-col items-center justify-end">
+              <div className="relative">
+                {/* Soft decorative elements floating */}
+                <div className="absolute -top-12 -left-12 text-5xl animate-bounce duration-1000">🎉</div>
+                <div className="absolute -bottom-8 -right-8 text-5xl animate-bounce delay-300">✨</div>
                 
-                {/* CANDLE FLAME & WICK */}
-                <div className="absolute top-8 z-20 flex flex-col items-center">
-                  {candleLit ? (
-                    <div className="w-4 h-6 rounded-full candle-flame animate-pulse"></div>
-                  ) : (
-                    // Smoke trace when blown
-                    <div className="w-1.5 h-6 bg-stone-300/60 rounded-full blur-[1.5px] animate-bounce duration-1000 origin-bottom"></div>
-                  )}
-                  {/* Wick */}
-                  <div className="w-0.5 h-2 bg-stone-800"></div>
-                  {/* Wax Candle Bar */}
-                  <div className="w-3 h-10 bg-gradient-to-r from-amber-200 via-rose-300 to-amber-300 rounded-sm relative">
-                    <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.4)_25%,rgba(255,255,255,0.4)_50%,transparent_50%,transparent_75%,rgba(255,255,255,0.4)_75%)] bg-[length:6px_6px]"></div>
-                  </div>
-                </div>
-
-                {/* CAKE LAYERS */}
-                {/* Layer Top */}
-                <div className="w-28 h-8 bg-gradient-to-r from-rose-200 to-rose-300 rounded-full border-b border-rose-400 z-10 flex items-center justify-center relative">
-                  {/* Decorative frosting white dots */}
-                  <div className="absolute -top-1 left-2 w-2.5 h-2.5 bg-white rounded-full"></div>
-                  <div className="absolute -top-1 left-8 w-2.5 h-2.5 bg-white rounded-full"></div>
-                  <div className="absolute -top-1 left-14 w-2.5 h-2.5 bg-white rounded-full"></div>
-                  <div className="absolute -top-1 left-20 w-2.5 h-2.5 bg-white rounded-full"></div>
-                  <div className="absolute -top-1 left-24 w-2.5 h-2.5 bg-white rounded-full"></div>
-                </div>
-
-                {/* Layer Middle */}
-                <div className="w-36 h-12 bg-gradient-to-r from-rose-300 to-rose-400 -mt-4 border-b border-rose-500 rounded-full z-8 relative flex items-center justify-center">
-                  <div className="absolute top-1 w-full h-1 bg-yellow-200/50"></div>
-                  <div className="absolute top-3 w-full h-1 bg-white/40"></div>
-                </div>
-
-                {/* Layer Base Cream */}
-                <div className="w-44 h-16 bg-gradient-to-r from-stone-100 to-stone-200 -mt-6 border-b border-stone-300 rounded-full z-5 relative">
-                  {/* Strawberry pieces sticked to cake */}
-                  <div className="absolute bottom-4 left-6 w-3 h-3 bg-red-500 rounded-full shadow-inner"></div>
-                  <div className="absolute bottom-6 left-16 w-3.5 h-3.5 bg-red-500 rounded-full shadow-inner"></div>
-                  <div className="absolute bottom-5 left-28 w-3 h-3 bg-red-500 rounded-full shadow-inner"></div>
-                  <div className="absolute bottom-4 left-36 w-3.5 h-3.5 bg-red-500 rounded-full shadow-inner"></div>
-                </div>
-
-                {/* Cake Stand Tray */}
-                <div className="w-52 h-4 bg-stone-300 rounded-full shadow-md z-2 -mt-4"></div>
+                <h1 id="title_selamat_ulang_tahun" className="text-5xl sm:text-7xl font-serif-aesthetic font-extrabold tracking-wide drop-shadow-sm leading-tight text-center">
+                  Selamat <br/>
+                  <span className={`inline-block py-2 ${
+                    selectedTheme === 'midnight' 
+                      ? 'text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-indigo-200 to-amber-200' 
+                      : 'text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-amber-500 to-rose-600'
+                  }`}>
+                    Ulang Tahun
+                  </span>
+                </h1>
               </div>
 
-              {/* CANDLE CONTROL BUTTONS */}
-              <div className="w-full flex flex-col gap-2 mt-4">
-                {candleLit ? (
-                  <div className="space-y-3">
-                    <button 
-                      id="blow_candle_tap_btn"
-                      onClick={triggerBlowCandle}
-                      className="px-6 py-2.5 rounded-full bg-stone-900 text-white font-bold hover:bg-stone-800 transition-all flex items-center gap-1.5 justify-center mx-auto shadow-md"
-                    >
-                      <Flame className="w-4 h-4 text-amber-400" />
-                      <span>Tiup Lilin 🕯️💨</span>
-                    </button>
+              <button 
+                id="start_journey_btn"
+                onClick={handleNextStep}
+                className={`group flex items-center gap-3 px-8 py-4 rounded-full text-base font-bold transition-all duration-300 hover:scale-105 shadow-lg ${getAccentBtnClass()}`}
+              >
+                <span>Next</span>
+                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+              </button>
+            </motion.div>
+          )}
 
-                    {micBlowSupported && (
-                      <button
-                        onClick={startListeningForBlow}
-                        className={`text-xs block mx-auto underline font-medium ${isListeningForBlow ? 'text-rose-500 animate-pulse' : 'text-stone-500'}`}
-                      >
-                        {isListeningForBlow ? '🔴 Dekatkan mulut ke mic & ditiup...' : '🎤 Atau tiup langsung pakai microphone'}
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-2 animate-fadeIn">
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">✨ Selamat! Lilin Berhasil Ditiup! ✨</p>
-                    <button 
-                      onClick={resetCandle}
-                      className="px-4 py-1.5 rounded-full border border-stone-200 bg-white/90 text-stone-700 text-xs font-semibold hover:bg-stone-100 transition-all flex items-center gap-1 justify-center mx-auto shadow-sm"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Nyalakan Lilin Lagi</span>
-                    </button>
-                  </div>
+          {/* STEP 1: BIRTHDAY PERSON'S NAME */}
+          {step === 1 && (
+            <motion.div 
+              key="step1"
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -30, scale: 0.95 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              id="step_1_container" 
+              className={`w-full max-w-xl p-8 rounded-3xl ${getCardGlassClass()} text-center relative overflow-hidden`}
+            >
+              {/* Absolute decorative circle blobs */}
+              <div className="absolute -top-16 -left-16 w-32 h-32 bg-rose-200/20 rounded-full blur-2xl"></div>
+              <div className="absolute -bottom-16 -right-16 w-32 h-32 bg-amber-200/20 rounded-full blur-2xl"></div>
+
+              <div className="flex justify-center mb-6">
+                <span className="text-4xl animate-pulse">🎂</span>
+              </div>
+
+              <p className="text-xs tracking-widest uppercase font-bold opacity-60 mb-2">Hari Ini Adalah Milikmu,</p>
+              
+              <h1 id="birthday_person_name_display" className="text-5xl sm:text-7xl font-handwriting italic font-bold mb-6 leading-tight select-all text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-amber-500">
+                {birthdayName || 'Adinda Kirana'}
+              </h1>
+
+              <div className="w-16 h-1 bg-gradient-to-r from-rose-400 to-amber-300 mx-auto mb-6 rounded-full"></div>
+
+              <p className="text-sm italic opacity-80 leading-relaxed max-w-md mx-auto mb-8 font-serif-aesthetic">
+                &ldquo;Semoga seiring bertambahnya angka, senyumanmu semakin merekah, hatimu semakin diteduhkan, dan duniamu selalu diisi oleh kedamaian serta cinta tulus.&rdquo;
+              </p>
+
+              {/* Custom Interactive Heart Click */}
+              <div className="mb-8">
+                <button 
+                  id="floating_heart_tap_btn"
+                  onClick={() => {
+                    playSparkleSound();
+                    confetti({
+                      particleCount: 20,
+                      angle: 90,
+                      spread: 45,
+                      origin: { y: 0.6 }
+                    });
+                  }}
+                  className="mx-auto w-16 h-16 rounded-full bg-rose-50 hover:bg-rose-100 flex items-center justify-center border border-rose-200 shadow-md group active:scale-95 transition-all"
+                  title="Kirimkan Cinta Kasih Anda"
+                >
+                  <Heart className="w-8 h-8 text-rose-500 fill-rose-500/20 group-hover:scale-110 group-hover:fill-rose-500 transition-all animate-float" />
+                </button>
+                <span className="text-[10px] block mt-2 opacity-50 font-semibold uppercase tracking-wider">Tekan untuk kirim cinta</span>
+              </div>
+
+              {/* Step Controls */}
+              <div className="flex justify-between items-center pt-4 border-t border-stone-200/10">
+                <button 
+                  id="step1_back_btn"
+                  onClick={handlePrevStep}
+                  className={`flex items-center gap-1 px-4 py-2.5 rounded-full text-xs font-semibold ${getSecBtnClass()}`}
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Kembali</span>
+                </button>
+                
+                <button 
+                  id="step1_next_btn"
+                  onClick={handleNextStep}
+                  className={`flex items-center gap-1.5 px-6 py-2.5 rounded-full text-xs font-bold shadow-md transition-all hover:scale-105 ${getAccentBtnClass()}`}
+                >
+                  <span>Lihat Galeri Foto 📸</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+            </motion.div>
+          )}
+
+          {/* STEP 2: PHOTO GALLERY SCRAPBOOK */}
+          {step === 2 && (
+            <motion.div 
+              key="step2"
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -30, scale: 0.95 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              id="step_2_container" 
+              className="w-full flex flex-col gap-6"
+            >
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-stone-200/10 pb-4">
+                <div className="text-center sm:text-left">
+                  <span className="inline-block px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold uppercase tracking-widest mb-1">Galeri Kenangan</span>
+                  <h2 className="text-2xl font-serif-aesthetic font-bold">Galeri Foto Estetik</h2>
+                </div>
+                
+                {!isViewOnly && (
+                  <label className="flex items-center gap-1.5 text-xs font-bold text-white bg-rose-500 hover:bg-rose-600 px-5 py-2.5 rounded-full shadow-md shadow-rose-500/20 cursor-pointer transition-all hover:scale-105">
+                    <Upload className="w-4 h-4" />
+                    <span>Unggah Foto</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      multiple 
+                      onChange={handlePhotoUpload} 
+                      className="hidden" 
+                    />
+                  </label>
                 )}
               </div>
 
-              {/* THE SENDER LETTER BOX */}
-              <div className="w-full mt-8 p-5 rounded-2xl bg-white/80 border border-stone-100 text-left relative shadow-inner">
-                <span className="absolute -top-3 left-4 bg-rose-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Surat Dari {senderName || 'Kami'}</span>
-                <p className="font-handwriting text-2xl text-stone-800 leading-relaxed pt-2 whitespace-pre-line">
-                  {customLetter}
-                </p>
-                <div className="text-right mt-4 font-serif-aesthetic font-bold text-xs text-rose-500 tracking-wider">
-                  — {senderName}
-                </div>
+              {/* Aesthetic Scrapbook Collage of Polaroids */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 py-4">
+                {photos.map((p, idx) => {
+                  // Generate unique rotating angle based on index for natural polaroid aesthetic look
+                  const angles = ['-rotate-3', 'rotate-2', '-rotate-1', 'rotate-3'];
+                  const currentAngle = angles[idx % angles.length];
+
+                  return (
+                    <div 
+                      key={p.id}
+                      className={`bg-white p-3 pb-6 rounded-2xl shadow-xl border border-stone-100 transition-all duration-300 hover:scale-105 hover:rotate-0 hover:z-20 relative group ${currentAngle}`}
+                    >
+                      <div className="aspect-square w-full overflow-hidden bg-stone-50 rounded-xl relative">
+                        <img 
+                          src={p.url} 
+                          alt="Foto Kenangan" 
+                          className="w-full h-full object-cover grayscale-[10%] hover:grayscale-0 transition-all duration-500" 
+                        />
+                        {/* Hover delete overlay */}
+                        {!isViewOnly && (
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleDeletePhoto(p.id);
+                                playSparkleSound();
+                              }}
+                              className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow transition-all transform hover:scale-110"
+                              title="Hapus Foto"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-center font-handwriting text-stone-800 text-lg pt-3 pb-1 px-1 line-clamp-1 leading-none select-none">
+                        {p.caption || 'Kenangan manis ✨'}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* In-Grid Upload Card */}
+                {!isViewOnly && (
+                  <label className="bg-white/40 hover:bg-white/70 border-2 border-dashed border-stone-300/50 rounded-2xl p-4 aspect-square flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-105 shadow-sm group">
+                    <Camera className="w-8 h-8 text-stone-400 group-hover:text-rose-500 group-hover:scale-110 transition-all mb-2" />
+                    <span className="text-xs font-bold text-stone-600 group-hover:text-stone-800">Tambah Foto</span>
+                    <span className="text-[9px] text-stone-400 mt-0.5">Unggah dari hp/laptop</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      multiple 
+                      onChange={handlePhotoUpload} 
+                      className="hidden" 
+                    />
+                  </label>
+                )}
               </div>
 
-              {/* Navigation Back */}
-              <button 
-                id="final_back_btn"
-                onClick={handlePrevStep}
-                className={`flex items-center gap-1 mt-6 px-4 py-2 rounded-full text-xs font-semibold ${getSecBtnClass()}`}
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Ulangi Kenangan</span>
-              </button>
+              {/* Step controls */}
+              <div className="flex justify-between items-center mt-6">
+                <button 
+                  id="step2_back_btn"
+                  onClick={handlePrevStep}
+                  className={`flex items-center gap-1 px-4 py-2.5 rounded-full text-xs font-semibold ${getSecBtnClass()}`}
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Kembali</span>
+                </button>
+                
+                <button 
+                  id="step2_next_btn"
+                  onClick={handleNextStep}
+                  className={`flex items-center gap-1.5 px-6 py-2.5 rounded-full text-xs font-bold shadow-md transition-all hover:scale-105 ${getAccentBtnClass()}`}
+                >
+                  <span>Lihat Kue Ulang Tahun 🎂</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </motion.div>
+          )}
 
-            </div>
+          {/* STEP 3: CAKE & BLOW CANDLES */}
+          {step === 3 && (
+            <motion.div 
+              key="step3"
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -30, scale: 0.95 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              id="step_3_container" 
+              className="w-full max-w-xl mx-auto flex flex-col gap-6 pb-8"
+            >
+              
+              <div className={`p-6 sm:p-8 rounded-3xl ${getCardGlassClass()} flex flex-col items-center justify-center text-center relative overflow-hidden shadow-xl`}>
+                
+                <span className="inline-block px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold uppercase tracking-widest mb-4">Interaktif</span>
+                
+                <h2 className="text-3xl font-serif-aesthetic font-bold mb-1">Kue Ulang Tahun</h2>
+                <p className="text-xs text-stone-500 dark:text-stone-300 mb-6">Tiup lilinnya untuk meledakkan kejutan indah!</p>
 
-            {/* Decorative note info */}
-            <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 text-[11px] text-amber-950 leading-relaxed">
-              🍰 <strong>Cara Kirim Link Ini:</strong> <br/>
-              Kalian bisa mengisi data ucapan di atas lalu membagikan URL preview aplikasi ini ke teman yang sedang berulang tahun. Seluruh ucapan dan foto yang Anda simpan akan tampil persis di layar mereka!
-            </div>
+                {/* 3D-ish CSS Birthday Cake */}
+                <div className="relative w-48 h-48 my-6 flex flex-col items-center justify-end">
+                  
+                  {/* CANDLE FLAME & WICK */}
+                  <div className="absolute top-8 z-20 flex flex-col items-center">
+                    {candleLit ? (
+                      <div className="w-4 h-6 rounded-full candle-flame animate-pulse"></div>
+                    ) : (
+                      // Smoke trace when blown
+                      <div className="w-1.5 h-6 bg-stone-300/60 rounded-full blur-[1.5px] animate-bounce duration-1000 origin-bottom"></div>
+                    )}
+                    {/* Wick */}
+                    <div className="w-0.5 h-2 bg-stone-800"></div>
+                    {/* Wax Candle Bar */}
+                    <div className="w-3 h-10 bg-gradient-to-r from-amber-200 via-rose-300 to-amber-300 rounded-sm relative">
+                      <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.4)_25%,rgba(255,255,255,0.4)_50%,transparent_50%,transparent_75%,rgba(255,255,255,0.4)_75%)] bg-[length:6px_6px]"></div>
+                    </div>
+                  </div>
 
-          </div>
-        )}
+                  {/* CAKE LAYERS */}
+                  {/* Layer Top */}
+                  <div className="w-28 h-8 bg-gradient-to-r from-rose-200 to-rose-300 rounded-full border-b border-rose-400 z-10 flex items-center justify-center relative">
+                    {/* Decorative frosting white dots */}
+                    <div className="absolute -top-1 left-2 w-2.5 h-2.5 bg-white rounded-full"></div>
+                    <div className="absolute -top-1 left-8 w-2.5 h-2.5 bg-white rounded-full"></div>
+                    <div className="absolute -top-1 left-14 w-2.5 h-2.5 bg-white rounded-full"></div>
+                    <div className="absolute -top-1 left-20 w-2.5 h-2.5 bg-white rounded-full"></div>
+                    <div className="absolute -top-1 left-24 w-2.5 h-2.5 bg-white rounded-full"></div>
+                  </div>
+
+                  {/* Layer Middle */}
+                  <div className="w-36 h-12 bg-gradient-to-r from-rose-300 to-rose-400 -mt-4 border-b border-rose-500 rounded-full z-8 relative flex items-center justify-center">
+                    <div className="absolute top-1 w-full h-1 bg-yellow-200/50"></div>
+                    <div className="absolute top-3 w-full h-1 bg-white/40"></div>
+                  </div>
+
+                  {/* Layer Base Cream */}
+                  <div className="w-44 h-16 bg-gradient-to-r from-stone-100 to-stone-200 -mt-6 border-b border-stone-300 rounded-full z-5 relative">
+                    {/* Strawberry pieces sticked to cake */}
+                    <div className="absolute bottom-4 left-6 w-3 h-3 bg-red-500 rounded-full shadow-inner"></div>
+                    <div className="absolute bottom-6 left-16 w-3.5 h-3.5 bg-red-500 rounded-full shadow-inner"></div>
+                    <div className="absolute bottom-5 left-28 w-3 h-3 bg-red-500 rounded-full shadow-inner"></div>
+                    <div className="absolute bottom-4 left-36 w-3.5 h-3.5 bg-red-500 rounded-full shadow-inner"></div>
+                  </div>
+
+                  {/* Cake Stand Tray */}
+                  <div className="w-52 h-4 bg-stone-300 rounded-full shadow-md z-2 -mt-4"></div>
+                </div>
+
+                {/* CANDLE CONTROL BUTTONS */}
+                <div className="w-full flex flex-col gap-2 mt-4">
+                  {candleLit ? (
+                    <div className="space-y-3">
+                      <button 
+                        id="blow_candle_tap_btn"
+                        onClick={triggerBlowCandle}
+                        className="px-6 py-2.5 rounded-full bg-stone-900 text-white font-bold hover:bg-stone-800 transition-all flex items-center gap-1.5 justify-center mx-auto shadow-md"
+                      >
+                        <Flame className="w-4 h-4 text-amber-400" />
+                        <span>Tiup Lilin 🕯️💨</span>
+                      </button>
+
+                      {micBlowSupported && (
+                        <button
+                          onClick={startListeningForBlow}
+                          className={`text-xs block mx-auto underline font-medium ${isListeningForBlow ? 'text-rose-500 animate-pulse' : 'text-stone-500'}`}
+                        >
+                          {isListeningForBlow ? '🔴 Dekatkan mulut ke mic & ditiup...' : '🎤 Atau tiup langsung pakai microphone'}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2 animate-fadeIn">
+                      <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">✨ Selamat! Lilin Berhasil Ditiup! ✨</p>
+                      <button 
+                        onClick={resetCandle}
+                        className="px-4 py-1.5 rounded-full border border-stone-200 bg-white/90 text-stone-700 text-xs font-semibold hover:bg-stone-100 transition-all flex items-center gap-1 justify-center mx-auto shadow-sm"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Nyalakan Lilin Lagi</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* THE SENDER LETTER BOX */}
+                <div className="w-full mt-8 p-5 rounded-2xl bg-white/80 border border-stone-100 text-left relative shadow-inner">
+                  <span className="absolute -top-3 left-4 bg-rose-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Surat Dari {senderName || 'Kami'}</span>
+                  <p className="font-handwriting text-2xl text-stone-800 leading-relaxed pt-2 whitespace-pre-line">
+                    {customLetter}
+                  </p>
+                  <div className="text-right mt-4 font-serif-aesthetic font-bold text-xs text-rose-500 tracking-wider">
+                    — {senderName}
+                  </div>
+                </div>
+
+                {/* Navigation Back */}
+                <button 
+                  id="final_back_btn"
+                  onClick={handlePrevStep}
+                  className={`flex items-center gap-1 mt-6 px-4 py-2 rounded-full text-xs font-semibold ${getSecBtnClass()}`}
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Ulangi Kenangan</span>
+                </button>
+
+              </div>
+
+              {/* Decorative note info */}
+              <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 text-[11px] text-amber-950 leading-relaxed">
+                🍰 <strong>Cara Kirim Link Ini:</strong> <br/>
+                Kalian bisa mengisi data ucapan di atas lalu membagikan URL preview aplikasi ini ke teman yang sedang berulang tahun. Seluruh ucapan dan foto yang Anda simpan akan tampil persis di layar mereka!
+              </div>
+
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </main>
 

@@ -173,3 +173,21 @@
     transform: translateY(0);
   }
 }
+
+/* Floating Balloons animation */
+@keyframes balloonRise {
+  0% {
+    transform: translateY(115vh) rotate(0deg);
+  }
+  50% {
+    transform: translateY(50vh) rotate(-10deg);
+  }
+  100% {
+    transform: translateY(-25vh) rotate(10deg);
+  }
+}
+
+.animate-balloon-rise {
+  animation: balloonRise 16s linear infinite;
+}
+
