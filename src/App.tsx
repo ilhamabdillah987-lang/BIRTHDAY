@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, FormEvent, ChangeEvent } from 'react';
 import confetti from 'canvas-confetti';
+// @ts-ignore
+import birthdayGirlImg from './assets/images/birthday_girl_1783140897098.jpg';
 import { 
   Heart, 
   Sparkles, 
@@ -23,10 +25,10 @@ import {
 
 // Default Unsplash aesthetic images for beautiful initial design
 const DEFAULT_PHOTOS = [
-  { id: '1', url: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=600&q=80', caption: 'Momen penuh kehangatan' },
-  { id: '2', url: 'https://images.unsplash.com/photo-1533750349088-cd871a92f311?auto=format&fit=crop&w=600&q=80', caption: 'Hari yang seindah bunga mekar' },
-  { id: '3', url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80', caption: 'Pijar harapan yang menyala terang' },
-  { id: '4', url: 'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&w=600&q=80', caption: 'Menikmati setiap detak langkah waktu' }
+  { id: '1', url: birthdayGirlImg, caption: 'Selamat ulang tahun cantik ✨' },
+  { id: '2', url: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=600&q=80', caption: 'Momen penuh kehangatan' },
+  { id: '3', url: 'https://images.unsplash.com/photo-1533750349088-cd871a92f311?auto=format&fit=crop&w=600&q=80', caption: 'Hari yang seindah bunga mekar' },
+  { id: '4', url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80', caption: 'Pijar harapan yang menyala terang' }
 ];
 
 interface CustomPhoto {
@@ -59,7 +61,18 @@ export default function App() {
   });
   const [photos, setPhotos] = useState<CustomPhoto[]>(() => {
     const saved = localStorage.getItem('bday_photos');
-    return saved ? JSON.parse(saved) : DEFAULT_PHOTOS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0 && parsed[0].url !== birthdayGirlImg) {
+          return DEFAULT_PHOTOS;
+        }
+        return parsed;
+      } catch (e) {
+        return DEFAULT_PHOTOS;
+      }
+    }
+    return DEFAULT_PHOTOS;
   });
 
   // Settings Panel Toggle
@@ -839,14 +852,27 @@ export default function App() {
         {step === 2 && (
           <div id="step_2_container" className="w-full animate-fadeIn flex flex-col gap-6">
             
-            <div className="text-center">
-              <span className="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-widest mb-2">Galeri Estetik</span>
-              <h2 className="text-3xl font-serif-aesthetic font-bold">Momen-Momen Indah Kita</h2>
-              <p className="text-xs text-stone-500 dark:text-stone-300 mt-1">Mengintip kembali senyuman dan kenangan manis yang telah terlewati</p>
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-stone-200/10 pb-4">
+              <div className="text-center sm:text-left">
+                <span className="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-widest mb-1">Galeri Estetik</span>
+                <h2 className="text-2xl font-serif-aesthetic font-bold">Galeri Foto Kenangan</h2>
+              </div>
+              
+              <label className="flex items-center gap-1.5 text-xs font-bold text-white bg-rose-500 hover:bg-rose-600 px-5 py-2.5 rounded-full shadow-md shadow-rose-500/20 cursor-pointer transition-all hover:scale-105">
+                <Upload className="w-4 h-4" />
+                <span>Unggah Foto</span>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  multiple 
+                  onChange={handlePhotoUpload} 
+                  className="hidden" 
+                />
+              </label>
             </div>
 
             {/* Aesthetic Scrapbook Collage of Polaroids */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 py-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 py-4">
               {photos.map((p, idx) => {
                 // Generate unique rotating angle based on index for natural polaroid aesthetic look
                 const angles = ['-rotate-3', 'rotate-2', '-rotate-1', 'rotate-3'];
@@ -855,40 +881,45 @@ export default function App() {
                 return (
                   <div 
                     key={p.id}
-                    className={`bg-white p-4 pb-6 rounded-md shadow-lg border border-stone-100 transition-all duration-300 hover:scale-105 hover:rotate-0 hover:z-20 ${currentAngle}`}
+                    className={`bg-white p-3 rounded-2xl shadow-lg border border-stone-100 transition-all duration-300 hover:scale-105 hover:rotate-0 hover:z-20 relative group ${currentAngle}`}
                   >
-                    <div className="aspect-square w-full overflow-hidden bg-stone-50 rounded-sm relative group">
+                    <div className="aspect-square w-full overflow-hidden bg-stone-50 rounded-xl relative">
                       <img 
                         src={p.url} 
-                        alt={p.caption} 
-                        className="w-full h-full object-cover grayscale-[20%] hover:grayscale-0 transition-all duration-500" 
+                        alt="Foto Kenangan" 
+                        className="w-full h-full object-cover grayscale-[10%] hover:grayscale-0 transition-all duration-500" 
                       />
-                      <div className="absolute inset-0 bg-stone-900/10 opacity-0 group-hover:opacity-100 transition-all"></div>
-                    </div>
-                    {/* Caption area */}
-                    <div className="mt-4 text-center">
-                      <p className="font-handwriting text-xl text-stone-700 leading-snug break-words px-1">
-                        {p.caption || 'Momen manis ✨'}
-                      </p>
+                      {/* Hover delete overlay */}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          onClick={() => {
+                            handleDeletePhoto(p.id);
+                            playSparkleSound();
+                          }}
+                          className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow transition-all transform hover:scale-110"
+                          title="Hapus Foto"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
               })}
 
-              {/* Empty state or upload suggestion in-grid */}
-              {photos.length === 0 && (
-                <div className="col-span-full bg-white/40 border border-dashed border-stone-300 rounded-3xl p-12 text-center text-stone-500">
-                  <Camera className="w-12 h-12 text-stone-300 mx-auto mb-2" />
-                  <p className="text-sm font-semibold">Belum Ada Foto Terunggah</p>
-                  <p className="text-xs opacity-70 mt-1 mb-4">Mulai dengan klik tombol "Atur Ucapan / Foto" di pojok kanan atas!</p>
-                  <button 
-                    onClick={() => setShowSettings(true)}
-                    className="px-4 py-2 bg-rose-400 text-white rounded-full text-xs font-semibold"
-                  >
-                    Buka Konfigurasi
-                  </button>
-                </div>
-              )}
+              {/* In-Grid Upload Card */}
+              <label className="bg-white/40 hover:bg-white/70 border-2 border-dashed border-stone-300/50 rounded-2xl p-4 aspect-square flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-105 shadow-sm group">
+                <Camera className="w-8 h-8 text-stone-400 group-hover:text-rose-500 group-hover:scale-110 transition-all mb-2" />
+                <span className="text-xs font-bold text-stone-600 group-hover:text-stone-800">Tambah Foto</span>
+                <span className="text-[9px] text-stone-400 mt-0.5">Unggah dari hp/laptop</span>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  multiple 
+                  onChange={handlePhotoUpload} 
+                  className="hidden" 
+                />
+              </label>
             </div>
 
             {/* Step controls */}
@@ -915,16 +946,15 @@ export default function App() {
           </div>
         )}
 
-        {/* STEP 3: CAKE, BLOW CANDLES, HARAPAN & WISHLIST */}
+        {/* STEP 3: CAKE & BLOW CANDLES */}
         {step === 3 && (
-          <div id="step_3_container" className="w-full animate-fadeIn grid grid-cols-1 md:grid-cols-2 gap-8 items-start pb-8">
+          <div id="step_3_container" className="w-full max-w-xl mx-auto animate-fadeIn flex flex-col gap-6 pb-8">
             
-            {/* COLUMN 1: INTERACTIVE CAKE & CELEBRATION BOX */}
-            <div className={`p-6 sm:p-8 rounded-3xl ${getCardGlassClass()} flex flex-col items-center justify-center text-center relative overflow-hidden`}>
+            <div className={`p-6 sm:p-8 rounded-3xl ${getCardGlassClass()} flex flex-col items-center justify-center text-center relative overflow-hidden shadow-xl`}>
               
               <span className="inline-block px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold uppercase tracking-widest mb-4">Interaktif</span>
               
-              <h2 className="text-2xl font-serif-aesthetic font-bold mb-1">Kue Ulang Tahunku</h2>
+              <h2 className="text-3xl font-serif-aesthetic font-bold mb-1">Kue Ulang Tahun</h2>
               <p className="text-xs text-stone-500 dark:text-stone-300 mb-6">Tiup lilinnya untuk meledakkan kejutan indah!</p>
 
               {/* 3D-ish CSS Birthday Cake */}
@@ -1035,67 +1065,10 @@ export default function App() {
 
             </div>
 
-            {/* COLUMN 2: WISH JAR / HARAPAN YANG MAU DITULIS */}
-            <div className={`p-6 sm:p-8 rounded-3xl ${getCardGlassClass()} flex flex-col justify-start text-left relative`}>
-              
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">🌟</div>
-                <div>
-                  <h3 className="text-xl font-serif-aesthetic font-bold">Papan Harapan & Doa</h3>
-                  <p className="text-xs text-stone-500">Tuliskan doa serta impian terindahmu di bawah ini!</p>
-                </div>
-              </div>
-
-              {/* Add Wish Form */}
-              <form onSubmit={handleAddWish} className="flex gap-2 mb-6">
-                <input 
-                  type="text" 
-                  value={newWish}
-                  onChange={(e) => setNewWish(e.target.value)}
-                  placeholder="Contoh: Semoga impian kuliah/kerja tercapai..."
-                  className="flex-grow px-4 py-2.5 rounded-full border border-stone-200 bg-white/90 text-stone-800 focus:outline-none focus:ring-2 focus:ring-rose-300 text-xs"
-                />
-                <button 
-                  type="submit"
-                  className="bg-stone-900 text-white p-2.5 rounded-full hover:bg-stone-800 transition-all shrink-0 shadow"
-                  title="Tambahkan Doa"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </form>
-
-              {/* List of Wishes */}
-              <div className="space-y-3 overflow-y-auto max-h-[300px] pr-1">
-                {wishes.map((wish, index) => (
-                  <div 
-                    key={index} 
-                    className="flex justify-between items-start gap-2 bg-white/70 hover:bg-white p-3 rounded-2xl border border-stone-200/40 text-xs transition-all shadow-sm animate-fadeIn"
-                  >
-                    <span className="leading-relaxed text-stone-700 font-medium break-all">{wish}</span>
-                    <button 
-                      type="button"
-                      onClick={() => removeWish(index)}
-                      className="text-stone-400 hover:text-rose-500 shrink-0 self-center"
-                      title="Hapus Doa"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-
-                {wishes.length === 0 && (
-                  <div className="text-center py-12 text-stone-400 text-xs">
-                    Papan harapan masih kosong. Tulis harapan pertamamu!
-                  </div>
-                )}
-              </div>
-
-              {/* Decorative note info */}
-              <div className="mt-8 bg-amber-50/50 p-4 rounded-2xl border border-amber-100 text-[11px] text-amber-900 leading-relaxed">
-                🍰 <strong>Cara Kirim Link Ini:</strong> <br/>
-                Kalian bisa mengisi data ucapan di atas lalu membagikan URL preview aplikasi ini ke teman yang sedang berulang tahun. Seluruh ucapan dan foto yang Anda simpan akan tampil persis di layar mereka!
-              </div>
-
+            {/* Decorative note info */}
+            <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 text-[11px] text-amber-950 leading-relaxed">
+              🍰 <strong>Cara Kirim Link Ini:</strong> <br/>
+              Kalian bisa mengisi data ucapan di atas lalu membagikan URL preview aplikasi ini ke teman yang sedang berulang tahun. Seluruh ucapan dan foto yang Anda simpan akan tampil persis di layar mereka!
             </div>
 
           </div>
