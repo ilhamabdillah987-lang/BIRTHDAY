@@ -1,0 +1,6 @@
+{
+  "name": "Website Ucapan Selamat Ulang Tahun Estetik",
+  "description": "Aplikasi interaktif untuk membuat dan membagikan kartu ucapan ulang tahun dengan desain latar belakang estetik, lilin kue interaktif yang bisa ditiup, pemutar musik lofi, papan harapan (wish jar), dan pembuat surat selamat ulang tahun otomatis bertenaga AI Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
